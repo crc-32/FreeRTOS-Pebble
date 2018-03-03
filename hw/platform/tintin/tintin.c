@@ -20,6 +20,7 @@
 
 #include "stm32_power.h"
 #include "stm32_rtc.h"
+#include "stm32_backlight.h"
 
 // extern void *strcpy(char *a2, const char *a1);
 
@@ -147,14 +148,6 @@ void hw_ambient_init() {
 
 uint16_t hw_ambient_get() {
     return 0;
-}
-
-/*** backlight init ***/
-
-void hw_backlight_init() {
-}
-
-void hw_backlight_set(uint16_t val) {
 }
 
 /* buttons */

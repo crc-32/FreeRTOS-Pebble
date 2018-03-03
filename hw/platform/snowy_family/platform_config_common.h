@@ -57,3 +57,8 @@
  * into memory bank 2. Note bank 2 is NOT DMA capable
  */
 #define CCRAM __attribute__((section(".ccmram")))
+
+//We use pin B14 for backlight
+#define BL_PIN GPIO_Pin_14
+#define BL_PIN_SOURCE GPIO_PinSource14
+#define BL_PORT RCC_AHB1Periph_GPIOB
