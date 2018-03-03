@@ -29,10 +29,6 @@
 #else
 #    error "I have no idea what kind of stm32 this is; sorry"
 #endif
-/*
- * Initialise the backlight. This is set as a timer (TIM12)
- * tied to GPIO B14 on PT Snowy
- */
 void hw_backlight_init(void)
 {
     hw_backlight_set(4999);
@@ -53,11 +49,9 @@ void hw_backlight_set(uint16_t pwmValue)
 
     GPIO_InitTypeDef GPIO_InitStruct;
 
-    // Pebble Time has backlight control driven by TIM12
-    // It is set to PWM mode 2 and will count up to n
     stm32_power_request(STM32_POWER_AHB1, BL_PORT);
 
-    GPIO_PinAFConfig(GPIOB, BL_PIN_SOURCE, GPIO_AF_TIM12);
+    GPIO_PinAFConfig(GPIOB, BL_PIN_SOURCE, GBL_TIM);
 
     /* Set pins */
     GPIO_InitStruct.GPIO_Pin = BL_PIN;
@@ -71,7 +65,7 @@ void hw_backlight_set(uint16_t pwmValue)
 
     // now the OC timer
     if (!_backlight_clocks_on)
-        stm32_power_request(STM32_POWER_APB1, RCC_APB1Periph_TIM12);
+        stm32_power_request(STM32_POWER_APB1, RBL_TIM);
 
     TIM_BaseStruct.TIM_Prescaler = 0;
     TIM_BaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
@@ -79,7 +73,7 @@ void hw_backlight_set(uint16_t pwmValue)
     TIM_BaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
     TIM_BaseStruct.TIM_RepetitionCounter = 0;
 
-    TIM_TimeBaseInit(TIM12, &TIM_BaseStruct);
+    TIM_TimeBaseInit(BL_TIM, &TIM_BaseStruct);
 
     // This shouldn't be here, but for some reason in QEMU, setting
     // the TIM clocks in RCC turns off UART8. weird.
@@ -91,15 +85,15 @@ void hw_backlight_set(uint16_t pwmValue)
     TIM_OCStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
 
     TIM_OCStruct.TIM_Pulse = pwmValue;
-    TIM_OC1Init(TIM12, &TIM_OCStruct);
-    TIM_OC1PreloadConfig(TIM12, TIM_OCPreload_Enable);
+    TIM_OC1Init(BL_TIM, &TIM_OCStruct);
+    TIM_OC1PreloadConfig(BL_TIM, TIM_OCPreload_Enable);
 
-    TIM_Cmd(TIM12, ENABLE);
-    TIM_CtrlPWMOutputs(TIM12, ENABLE);
+    TIM_Cmd(BL_TIM, ENABLE);
+    TIM_CtrlPWMOutputs(BL_TIM, ENABLE);
 
     _backlight_clocks_on = pwmValue > 0;
     if (!_backlight_clocks_on)
-        stm32_power_release(STM32_POWER_APB1, RCC_APB1Periph_TIM12);
+        stm32_power_release(STM32_POWER_APB1, RBL_TIM);
 
     //DRV_LOG("backl", APP_LOG_LEVEL_DEBUG, "Backlight Set: %d", pwmValue);
 }

@@ -8,3 +8,6 @@
 #define BL_PIN GPIO_Pin_5
 #define BL_PIN_SOURCE GPIO_PinSource5
 #define BL_PORT RCC_AHB1Periph_GPIOB
+#define BL_TIM TIM3
+#define GBL_TIM GPIO_AF_TIM3
+#define RBL_TIM RCC_APB1Periph_TIM3
