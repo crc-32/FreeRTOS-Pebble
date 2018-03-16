@@ -29,41 +29,32 @@
 #else
 #    error "I have no idea what kind of stm32 this is; sorry"
 #endif
-void hw_backlight_init(void)
-{
-    hw_backlight_set(4999);
+#define _TIM_Func(CH, Func) TIM_OC ## CH ## Func
+#define TIM_Func(CH, Func) _TIM_Func(CH, Func)
+/*** backlight init ***/
+
+static uint8_t _backlight_clocks_on = 0;
+void hw_backlight_init() {
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
+
+    GPIO_InitTypeDef GPIO_InitDef;
+
+    GPIO_InitDef.GPIO_Pin = BL_PIN;
+    GPIO_InitDef.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_InitDef.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitDef.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    GPIO_InitDef.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOB, &GPIO_InitDef);
+
+    /* And multivac pronounced "and let there be backlight" */
+    GPIO_SetBits(GPIOB, BL_PIN);
+
 }
 
-/* We turn on the clocks when pwmValue > 0, and turn them off when we're not
- * running the backlight.  */
-static uint8_t _backlight_clocks_on = 0;
-
-/*
- * Set the PWM value (brightness) of the backlight
- * This is *currently* 9999 as the top value, with 5000 being 50%
- */
-void hw_backlight_set(uint16_t pwmValue)
-{
+void hw_backlight_set(uint16_t val) {
     TIM_TimeBaseInitTypeDef TIM_BaseStruct;
     TIM_OCInitTypeDef TIM_OCStruct;
 
-    GPIO_InitTypeDef GPIO_InitStruct;
-
-    stm32_power_request(STM32_POWER_AHB1, BL_PORT);
-
-    GPIO_PinAFConfig(GPIOB, BL_PIN_SOURCE, GBL_TIM);
-
-    /* Set pins */
-    GPIO_InitStruct.GPIO_Pin = BL_PIN;
-    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
-    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-    GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-    stm32_power_release(STM32_POWER_AHB1, BL_PORT);
-
-    // now the OC timer
     if (!_backlight_clocks_on)
         stm32_power_request(STM32_POWER_APB1, RBL_TIM);
 
@@ -75,25 +66,21 @@ void hw_backlight_set(uint16_t pwmValue)
 
     TIM_TimeBaseInit(BL_TIM, &TIM_BaseStruct);
 
-    // This shouldn't be here, but for some reason in QEMU, setting
-    // the TIM clocks in RCC turns off UART8. weird.
-#ifdef STM32F4XX
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART8, ENABLE);
-#endif
     TIM_OCStruct.TIM_OCMode = TIM_OCMode_PWM2;  // set on compare
     TIM_OCStruct.TIM_OutputState = TIM_OutputState_Enable;
     TIM_OCStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
 
-    TIM_OCStruct.TIM_Pulse = pwmValue;
-    TIM_OC1Init(BL_TIM, &TIM_OCStruct);
-    TIM_OC1PreloadConfig(BL_TIM, TIM_OCPreload_Enable);
+    TIM_OCStruct.TIM_Pulse = val;
+
+    TIM_Func(BL_TIM_CH, Init)(BL_TIM, &TIM_OCStruct);
+    TIM_Func(BL_TIM_CH, PreloadConfig)(BL_TIM, TIM_OCPreload_Enable);
 
     TIM_Cmd(BL_TIM, ENABLE);
     TIM_CtrlPWMOutputs(BL_TIM, ENABLE);
 
-    _backlight_clocks_on = pwmValue > 0;
+    GPIO_PinAFConfig(GPIOB, BL_PIN_SOURCE, GBL_TIM);
+
+    _backlight_clocks_on = val > 0;
     if (!_backlight_clocks_on)
         stm32_power_release(STM32_POWER_APB1, RBL_TIM);
-
-    //DRV_LOG("backl", APP_LOG_LEVEL_DEBUG, "Backlight Set: %d", pwmValue);
 }

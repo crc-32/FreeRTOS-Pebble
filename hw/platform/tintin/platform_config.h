@@ -11,3 +11,4 @@
 #define BL_TIM TIM3
 #define GBL_TIM GPIO_AF_TIM3
 #define RBL_TIM RCC_APB1Periph_TIM3
+#define BL_TIM_CH 2

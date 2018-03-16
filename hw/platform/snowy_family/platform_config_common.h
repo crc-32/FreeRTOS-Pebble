@@ -65,3 +65,4 @@
 #define BL_TIM TIM12
 #define GBL_TIM GPIO_AF_TIM12
 #define RBL_TIM RCC_APB1Periph_TIM12
+#define BL_TIM_CH 1
