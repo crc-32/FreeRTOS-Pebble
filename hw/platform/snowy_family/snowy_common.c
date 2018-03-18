@@ -13,6 +13,7 @@
 #include "log.h"
 #include "stm32_power.h"
 #include "stm32_buttons_platform.h"
+#include "stm32_backlight.h"
 #include "FreeRTOS.h"
 #include "semphr.h"
 #include "task.h"
@@ -33,9 +34,16 @@ const vibrate_t hw_vibrate_config = {
     .clock   = RCC_AHB1Periph_GPIOF,
 };
 
-
-/* 
- * Begin device init 
+static stm32_backlight_config_t _backlight_platform_config = {
+  .pin = GPIO_Pin_14,
+  .tim = TIM12,
+  .pin_source = GPIO_PinSource14,
+  .port = RCC_AHB1Periph_GPIOB,
+  .af = GPIO_AF_TIM12,
+  .rcc_tim = RCC_APB1Periph_TIM12,
+};
+/*
+ * Begin device init
  */
 void debug_init()
 {
@@ -171,7 +179,14 @@ void init_USART8(void)
     stm32_power_release(STM32_POWER_AHB1, RCC_AHB1Periph_GPIOE);
 }
 
+/* backlight */
+void hw_backlight_set(uint16_t val) {
+  _hw_backlight_set(val, &_backlight_platform_config);
+}
 
+void hw_backlight_init(void) {
+  _hw_backlight_init(&_backlight_platform_config);
+}
 
 /*
  * Initialise the system watchdog timer

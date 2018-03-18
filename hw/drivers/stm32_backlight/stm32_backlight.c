@@ -34,12 +34,12 @@
 /*** backlight init ***/
 
 static uint8_t _backlight_clocks_on = 0;
-void hw_backlight_init() {
+void _hw_backlight_init(stm32_backlight_config_t *blc) {
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
 
     GPIO_InitTypeDef GPIO_InitDef;
 
-    GPIO_InitDef.GPIO_Pin = BL_PIN;
+    GPIO_InitDef.GPIO_Pin = blc->pin;
     GPIO_InitDef.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitDef.GPIO_OType = GPIO_OType_PP;
     GPIO_InitDef.GPIO_PuPd = GPIO_PuPd_NOPULL;
@@ -47,16 +47,16 @@ void hw_backlight_init() {
     GPIO_Init(GPIOB, &GPIO_InitDef);
 
     /* And multivac pronounced "and let there be backlight" */
-    GPIO_SetBits(GPIOB, BL_PIN);
+    GPIO_SetBits(GPIOB, blc->pin);
 
 }
 
-void hw_backlight_set(uint16_t val) {
+void _hw_backlight_set(uint16_t val, stm32_backlight_config_t *blc) {
     TIM_TimeBaseInitTypeDef TIM_BaseStruct;
     TIM_OCInitTypeDef TIM_OCStruct;
 
     if (!_backlight_clocks_on)
-        stm32_power_request(STM32_POWER_APB1, RBL_TIM);
+        stm32_power_request(STM32_POWER_APB1, blc->rcc_tim);
 
     TIM_BaseStruct.TIM_Prescaler = 0;
     TIM_BaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
@@ -64,7 +64,7 @@ void hw_backlight_set(uint16_t val) {
     TIM_BaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
     TIM_BaseStruct.TIM_RepetitionCounter = 0;
 
-    TIM_TimeBaseInit(BL_TIM, &TIM_BaseStruct);
+    TIM_TimeBaseInit(blc->tim, &TIM_BaseStruct);
 
     TIM_OCStruct.TIM_OCMode = TIM_OCMode_PWM2;  // set on compare
     TIM_OCStruct.TIM_OutputState = TIM_OutputState_Enable;
@@ -72,15 +72,15 @@ void hw_backlight_set(uint16_t val) {
 
     TIM_OCStruct.TIM_Pulse = val;
 
-    TIM_Func(BL_TIM_CH, Init)(BL_TIM, &TIM_OCStruct);
-    TIM_Func(BL_TIM_CH, PreloadConfig)(BL_TIM, TIM_OCPreload_Enable);
+    TIM_Func(BL_TIM_CH, Init)(blc->tim, &TIM_OCStruct);
+    TIM_Func(BL_TIM_CH, PreloadConfig)(blc->tim, TIM_OCPreload_Enable);
 
-    TIM_Cmd(BL_TIM, ENABLE);
-    TIM_CtrlPWMOutputs(BL_TIM, ENABLE);
+    TIM_Cmd(blc->tim, ENABLE);
+    TIM_CtrlPWMOutputs(blc->tim, ENABLE);
 
-    GPIO_PinAFConfig(GPIOB, BL_PIN_SOURCE, GBL_TIM);
+    GPIO_PinAFConfig(GPIOB, blc->pin_source, blc->af);
 
     _backlight_clocks_on = val > 0;
     if (!_backlight_clocks_on)
-        stm32_power_release(STM32_POWER_APB1, RBL_TIM);
+        stm32_power_release(STM32_POWER_APB1, blc->rcc_tim);
 }

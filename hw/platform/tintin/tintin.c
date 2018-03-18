@@ -24,6 +24,15 @@
 
 // extern void *strcpy(char *a2, const char *a1);
 
+static stm32_backlight_config_t _backlight_platform_config = {
+  .pin = GPIO_Pin_5,
+  .tim = TIM3,
+  .pin_source = GPIO_PinSource5,
+  .port = RCC_AHB1Periph_GPIOB,
+  .af = GPIO_AF_TIM3,
+  .rcc_tim = RCC_APB1Periph_TIM3,
+};
+
 /*** debug routines ***/
 
 static inline void _init_USART3();
@@ -273,6 +282,14 @@ uint8_t hw_display_get_state() {
     return 1;
 }
 
+/* backlight */
+void hw_backlight_set(uint16_t val) {
+  _hw_backlight_set(val, &_backlight_platform_config);
+}
+
+void hw_backlight_init(void) {
+  _hw_backlight_init(&_backlight_platform_config);
+}
 
 // void scanline_rgb888pixel_to_frambuffer(UG_S16 x, UG_S16 y, UG_COLOR c) {
 //     if (c)
