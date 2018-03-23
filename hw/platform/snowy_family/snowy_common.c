@@ -34,14 +34,6 @@ const vibrate_t hw_vibrate_config = {
     .clock   = RCC_AHB1Periph_GPIOF,
 };
 
-static stm32_backlight_config_t _backlight_platform_config = {
-  .pin = GPIO_Pin_14,
-  .tim = TIM12,
-  .pin_source = GPIO_PinSource14,
-  .port = RCC_AHB1Periph_GPIOB,
-  .af = GPIO_AF_TIM12,
-  .rcc_tim = RCC_APB1Periph_TIM12,
-};
 /*
  * Begin device init
  */
@@ -180,13 +172,17 @@ void init_USART8(void)
 }
 
 /* backlight */
-void hw_backlight_set(uint16_t val) {
-  _hw_backlight_set(val, &_backlight_platform_config);
-}
 
-void hw_backlight_init(void) {
-  _hw_backlight_init(&_backlight_platform_config);
-}
+#include "stm32_backlight_platform.h"
+
+stm32_backlight_config_t platform_backlight = {
+  .pin = GPIO_Pin_14,
+  .tim = TIM12,
+  .pin_source = GPIO_PinSource14,
+  .port = RCC_AHB1Periph_GPIOB,
+  .af = GPIO_AF_TIM12,
+  .rcc_tim = RCC_APB1Periph_TIM12
+};
 
 /*
  * Initialise the system watchdog timer
